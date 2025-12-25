@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Lesson: Amino Acids and Proteins</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@600;700&family=Inter:wght@400;500&display=swap');
+        
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #273f43;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #00424a;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #00606d;
+        }
+
+        .glass-card {
+            background: rgba(39, 63, 67, 0.6);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(219, 246, 250, 0.1);
+        }
+
+        .lesson-screen {
+            display: none;
+            opacity: 0;
+            transition: opacity 0.5s ease-in-out;
+        }
+        .lesson-screen.active {
+            display: block;
+            opacity: 1;
+        }
+
+        .quiz-option {
+            transition: all 0.2s ease-out;
+        }
+        .quiz-option:not(.disabled):hover {
+            transform: translateY(-2px);
+            background-color: rgba(0, 66, 74, 0.7);
+        }
+        .quiz-option.correct {
+            background-color: #00424a !important;
+            border-color: #34d399 !important;
+            color: #edfcff;
+        }
+        .quiz-option.incorrect {
+            background-color: #273f43 !important;
+            border-color: #de3730 !important;
+            color: #bac6ea;
+            opacity: 0.7;
+        }
+        .quiz-option.disabled {
+            cursor: not-allowed;
+        }
+        
+        .draggable {
+            cursor: grab;
+            transition: transform 0.2s;
+        }
+        .draggable:active {
+            cursor: grabbing;
+            transform: scale(1.05);
+            z-index: 10;
+        }
+        
+        .drop-zone {
+            transition: background-color 0.2s;
+        }
+        .drop-zone.drag-over {
+            background-color: rgba(0, 66, 74, 0.5);
+        }
+        .drop-zone.dropped {
+            border: 2px solid #34d399;
+            background-color: rgba(0, 66, 74, 0.3);
+        }
+
+        .feedback {
+            transform-origin: top;
+            transition: transform 0.3s cubic-bezier(0.68, -0.55, 0.27, 1.55), opacity 0.3s;
+        }
+        
+        .flash-card-inner {
+            transition: transform 0.6s;
+            transform-style: preserve-3d;
+        }
+        .flash-card.flipped .flash-card-inner {
+            transform: rotateY(180deg);
+        }
+        .flash-card-front, .flash-card-back {
+            -webkit-backface-visibility: hidden;
+            backface-visibility: hidden;
+        }
+        .flash-card-back {
+            transform: rotateY(180deg);
+        }
+
+    </style>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        display: ['Outfit', 'sans-serif'],
+                        body: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        'primary-dark': '#00424a',
+                        'primary-light': '#edfcff',
+                        'secondary-dark': '#273f43',
+                        'secondary-light': '#dbf6fa',
+                        'tertiary-dark': '#2f3b58',
+                        'tertiary-light': '#bac6ea',
+                        'bg-color': '#cde7ec',
+                        'error': '#de3730',
+                        'success': '#34d399',
+                        'neutral-dark': '#393c3d',
+                        'neutral-light': '#f8fafa',
+                        'accent': '#67e8f9',
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gradient-to-br from-[#0a101d] to-[#121c29] text-primary-light font-body flex items-center justify-center min-h-screen p-4">
+    <div id="app-container" class="w-full max-w-4xl mx-auto glass-card rounded-2xl shadow-2xl overflow-hidden flex flex-col" style="height: 95vh;">
+        
+        <header class="p-4 border-b border-secondary-dark/50 flex justify-between items-center bg-secondary-dark/30">
+            <h1 class="text-xl md:text-2xl font-display text-accent">Amino Acids & Proteins</h1>
+            <div id="progress-indicator" class="text-sm text-tertiary-light"></div>
+        </header>
+
+        <main class="flex-grow p-6 md:p-8 overflow-y-auto">
+            <!-- All lesson screens will be injected here by JS -->
+        </main>
+
+        <footer class="p-4 border-t border-secondary-dark/50 bg-secondary-dark/30 flex justify-between items-center">
+            <button id="back-btn" class="px-6 py-2 bg-secondary-dark hover:bg-neutral-dark rounded-lg font-semibold transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed">Back</button>
+            <button id="next-btn" class="px-6 py-2 bg-primary-dark hover:bg-[#00606d] text-white rounded-lg font-semibold transition duration-200">Next</button>
+        </footer>
+
+    </div>
+
+<script>
+const appData = {
+    screens: [
+        // Module 1
+        {
+            title: "Welcome",
+            content: `
+                <div class="text-center flex flex-col items-center justify-center h-full">
+                    <h2 class="text-4xl md:text-5xl font-display text-accent">الأحماض الأمينية والبروتينات</h2>
+                    <p class="text-xl md:text-2xl mt-2 text-secondary-light">Amino Acids and Proteins</p>
+                    <p class="mt-6 text-tertiary-light max-w-xl">An interactive learning module to explore the building blocks of life. Click "Start Lesson" to begin.</p>
+                </div>
+            `,
+            isIntro: true
+        },
+        {
+            title: "Learning Objectives",
+            content: `
+                <h2 class="text-2xl font-display mb-4">What You'll Learn</h2>
+                <ul class="space-y-3 list-disc list-inside text-tertiary-light">
+                    <li>The fundamental structure of amino acids.</li>
+                    <li>How amino acids link to form proteins.</li>
+                    <li>Different classifications of proteins.</li>
+                    <li>Key chemical tests to detect amino acids and proteins.</li>
+                    <li>The processes of protein precipitation and denaturation.</li>
+                </ul>
+            `
+        },
+        {
+            title: "Amino Acid Structure",
+            content: `
+                <h2 class="text-2xl font-display mb-2">The Building Blocks</h2>
+                <p class="text-tertiary-light mb-6">Every amino acid has a central carbon atom (the alpha-carbon) bonded to four groups. Can you identify them?</p>
+                <div class="flex flex-col lg:flex-row items-center justify-around gap-8">
+                    <div class="relative w-[300px] h-[250px] md:w-[350px] md:h-[300px]">
+                        <!-- Amino Acid SVG -->
+                        <svg viewBox="0 0 200 150" class="w-full h-full">
+                            <text x="95" y="78" font-family="Inter" font-size="12" fill="#edfcff">C</text>
+                            <text x="105" y="70" font-family="Inter" font-size="8" fill="#bac6ea">α</text>
+                            <line x1="100" y1="70" x2="100" y2="40" stroke="#bac6ea" stroke-width="1.5"/>
+                            <line x1="100" y1="80" x2="100" y2="110" stroke="#bac6ea" stroke-width="1.5"/>
+                            <line x1="100" y1="75" x2="60" y2="75" stroke="#bac6ea" stroke-width="1.5"/>
+                            <line x1="100" y1="75" x2="140" y2="75" stroke="#bac6ea" stroke-width="1.5"/>
+                            <text x="100" y="35" text-anchor="middle" font-size="10" fill="#edfcff">H</text>
+                            <text x="40" y="78" text-anchor="middle" font-size="10" fill="#edfcff">NH<tspan baseline-shift="sub" font-size="8">2</tspan></text>
+                            <text x="160" y="78" text-anchor="middle" font-size="10" fill="#edfcff">COOH</text>
+                            <rect x="85" y="115" width="30" height="30" rx="5" fill="#2f3b58" />
+                            <text x="100" y="132" text-anchor="middle" font-size="15" fill="#67e8f9" font-weight="bold">R</text>
+                        </svg>
+                        <!-- Drop Zones -->
+                        <div class="drop-zone absolute w-20 h-10 border-2 border-dashed border-tertiary-dark rounded-md" style="top: -10px; left: 135px;" data-accept="hydrogen"></div>
+                        <div class="drop-zone absolute w-28 h-10 border-2 border-dashed border-tertiary-dark rounded-md" style="top: 55px; left: -15px;" data-accept="amino"></div>
+                        <div class="drop-zone absolute w-32 h-10 border-2 border-dashed border-tertiary-dark rounded-md" style="top: 55px; left: 185px;" data-accept="carboxyl"></div>
+                        <div class="drop-zone absolute w-36 h-10 border-2 border-dashed border-tertiary-dark rounded-md" style="bottom: -15px; left: 107px;" data-accept="r-group"></div>
+                    </div>
+                    <div id="labels-container" class="grid grid-cols-2 gap-3">
+                        <div class="draggable p-2 bg-tertiary-dark rounded-md text-center" draggable="true" data-id="hydrogen">Hydrogen Atom</div>
+                        <div class="draggable p-2 bg-tertiary-dark rounded-md text-center" draggable="true" data-id="amino">Amino Group</div>
+                        <div class="draggable p-2 bg-tertiary-dark rounded-md text-center" draggable="true" data-id="carboxyl">Carboxyl Group</div>
+                        <div class="draggable p-2 bg-tertiary-dark rounded-md text-center" draggable="true" data-id="r-group">Variable 'R' Group</div>
+                    </div>
+                </div>
+                <div id="drag-feedback" class="feedback text-center mt-4 text-lg font-semibold h-6"></div>
+            `
+        },
+        // Module 2
+        {
+            title: "Peptide Bond Formation",
+            content: `
+                <h2 class="text-2xl font-display mb-2">Linking Up</h2>
+                <p class="text-tertiary-light mb-6">Amino acids join together through a dehydration reaction to form a peptide bond. Let's test your knowledge.</p>
+                <div class="space-y-6">
+                    <div>
+                        <p class="mb-2">1. Peptide bond formation is a hydration reaction.</p>
+                        <div class="quiz-container" data-quiz-type="tf" data-answer="false">
+                            <button class="quiz-option border-2 border-secondary-dark p-3 rounded-lg w-full md:w-auto md:min-w-[120px] text-left" data-value="true">True</button>
+                            <button class="quiz-option border-2 border-secondary-dark p-3 rounded-lg w-full md:w-auto md:min-w-[120px] text-left mt-2 md:mt-0 md:ml-2" data-value="false">False</button>
+                            <div class="feedback mt-2 h-6"></div>
+                        </div>
+                    </div>
+                     <div>
+                        <p class="mb-2">2. A protein made of 15 amino acids contains how many peptide bonds?</p>
+                        <div class="quiz-container flex items-center gap-4" data-quiz-type="fill" data-answer="14">
+                            <input type="number" class="quiz-input bg-secondary-dark p-3 rounded-lg border-2 border-tertiary-dark focus:border-accent focus:ring-0 outline-none w-24">
+                            <button class="check-btn px-4 py-2 bg-tertiary-dark hover:bg-[#4a5a8a] rounded-lg font-semibold">Check</button>
+                            <div class="feedback mt-0 h-6"></div>
+                        </div>
+                    </div>
+                </div>
+            `
+        },
+        // Module 3
+        {
+            title: "Protein Detection Tests",
+            content: `
+                <h2 class="text-2xl font-display mb-2">Chemical Detectives</h2>
+                <p class="text-tertiary-light mb-6">Scientists use several colorimetric tests to identify amino acids and proteins. Flip the cards to match the test to its target.</p>
+                <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    <div class="flash-card perspective-1000 h-40">
+                        <div class="flash-card-inner relative w-full h-full">
+                            <div class="flash-card-front absolute w-full h-full glass-card rounded-lg flex items-center justify-center p-4 text-center cursor-pointer">Biuret Test</div>
+                            <div class="flash-card-back absolute w-full h-full glass-card rounded-lg flex items-center justify-center p-4 text-center cursor-pointer bg-primary-dark">Detects Peptide Bonds</div>
+                        </div>
+                    </div>
+                    <div class="flash-card perspective-1000 h-40">
+                        <div class="flash-card-inner relative w-full h-full">
+                            <div class="flash-card-front absolute w-full h-full glass-card rounded-lg flex items-center justify-center p-4 text-center cursor-pointer">Ninhydrin Test</div>
+                            <div class="flash-card-back absolute w-full h-full glass-card rounded-lg flex items-center justify-center p-4 text-center cursor-pointer bg-primary-dark">Detects free α-amino groups</div>
+                        </div>
+                    </div>
+                     <div class="flash-card perspective-1000 h-40">
+                        <div class="flash-card-inner relative w-full h-full">
+                            <div class="flash-card-front absolute w-full h-full glass-card rounded-lg flex items-center justify-center p-4 text-center cursor-pointer">Xanthoproteic Test</div>
+                            <div class="flash-card-back absolute w-full h-full glass-card rounded-lg flex items-center justify-center p-4 text-center cursor-pointer bg-primary-dark">Detects aromatic rings</div>
+                        </div>
+                    </div>
+                    <div class="flash-card perspective-1000 h-40">
+                        <div class="flash-card-inner relative w-full h-full">
+                            <div class="flash-card-front absolute w-full h-full glass-card rounded-lg flex items-center justify-center p-4 text-center cursor-pointer">Millon's Test</div>
+                            <div class="flash-card-back absolute w-full h-full glass-card rounded-lg flex items-center justify-center p-4 text-center cursor-pointer bg-primary-dark">Detects phenol group (Tyrosine)</div>
+                        </div>
+                    </div>
+                    <div class="flash-card perspective-1000 h-40">
+                        <div class="flash-card-inner relative w-full h-full">
+                            <div class="flash-card-front absolute w-full h-full glass-card rounded-lg flex items-center justify-center p-4 text-center cursor-pointer">Sulfur Test</div>
+                            <div class="flash-card-back absolute w-full h-full glass-card rounded-lg flex items-center justify-center p-4 text-center cursor-pointer bg-primary-dark">Detects sulfur-containing amino acids</div>
+                        </div>
+                    </div>
+                </div>
+            `
+        },
+        {
+            title: "Test Your Knowledge: Biuret & Ninhydrin",
+            content: `
+                 <h2 class="text-2xl font-display mb-6">Practical Scenarios</h2>
+                 <div class="space-y-8">
+                    <div>
+                        <p class="mb-2">1. A student performs a Biuret test on an unknown solution and observes a blue color. What can be concluded?</p>
+                        <div class="quiz-container space-y-2" data-quiz-type="mcq" data-answer="b">
+                            <button class="quiz-option border-2 border-secondary-dark p-3 rounded-lg w-full text-left" data-value="a">A) The solution contains many peptide bonds.</button>
+                            <button class="quiz-option border-2 border-secondary-dark p-3 rounded-lg w-full text-left" data-value="b">B) The solution contains a single amino acid or no peptide bonds.</button>
+                            <button class="quiz-option border-2 border-secondary-dark p-3 rounded-lg w-full text-left" data-value="c">C) The solution contains a phenol group.</button>
+                            <button class="quiz-option border-2 border-secondary-dark p-3 rounded-lg w-full text-left" data-value="d">D) The solution contains sulfur.</button>
+                            <div class="feedback mt-2 h-6"></div>
+                        </div>
+                    </div>
+                     <div>
+                        <p class="mb-2">2. Which amino acid gives a yellow color with the Ninhydrin test?</p>
+                        <div class="quiz-container space-y-2" data-quiz-type="mcq" data-answer="c">
+                            <button class="quiz-option border-2 border-secondary-dark p-3 rounded-lg w-full text-left" data-value="a">A) Glycine</button>
+                            <button class="quiz-option border-2 border-secondary-dark p-3 rounded-lg w-full text-left" data-value="b">B) Tyrosine</button>
+                            <button class="quiz-option border-2 border-secondary-dark p-3 rounded-lg w-full text-left" data-value="c">C) Proline</button>
+                            <button class="quiz-option border-2 border-secondary-dark p-3 rounded-lg w-full text-left" data-value="d">D) Cysteine</button>
+                            <div class="feedback mt-2 h-6"></div>
+                        </div>
+                    </div>
+                </div>
+            `
+        },
+        // Module 4
+        {
+            title: "Protein Precipitation",
+            content: `
+                <h2 class="text-2xl font-display mb-2">Making Proteins Solid</h2>
+                <p class="text-tertiary-light mb-6">Protein precipitation can be reversible or irreversible (denaturation). Drag the agents to the correct category.</p>
+                <div class="flex flex-col md:flex-row gap-6 justify-between">
+                    <div class="w-full md:w-1/2">
+                        <h3 class="font-semibold text-center mb-2 text-accent">Agents</h3>
+                        <div id="precip-agents" class="min-h-[200px] p-3 glass-card rounded-lg flex flex-col gap-2">
+                            <div class="draggable p-3 bg-tertiary-dark rounded-md text-center" draggable="true" data-category="reversible">Concentrated salts</div>
+                            <div class="draggable p-3 bg-tertiary-dark rounded-md text-center" draggable="true" data-category="irreversible">Severe heat</div>
+                            <div class="draggable p-3 bg-tertiary-dark rounded-md text-center" draggable="true" data-category="irreversible">Strong acids</div>
+                            <div class="draggable p-3 bg-tertiary-dark rounded-md text-center" draggable="true" data-category="irreversible">Heavy metals</div>
+                        </div>
+                    </div>
+                    <div class="w-full md:w-1/2 flex flex-col gap-4">
+                        <div>
+                             <h3 class="font-semibold text-center mb-2 text-green-400">Reversible</h3>
+                             <div class="drop-zone min-h-[100px] p-3 border-2 border-dashed border-tertiary-dark rounded-lg" data-accept="reversible"></div>
+                        </div>
+                        <div>
+                             <h3 class="font-semibold text-center mb-2 text-red-400">Irreversible (Denaturation)</h3>
+                              <div class="drop-zone min-h-[150px] p-3 border-2 border-dashed border-tertiary-dark rounded-lg" data-accept="irreversible"></div>
+                        </div>
+                    </div>
+                </div>
+                <div id="precip-feedback" class="feedback text-center mt-4 text-lg font-semibold h-6"></div>
+            `
+        },
+        // Module 5
+        {
+            title: "Summary & Review",
+            content: `
+                <h2 class="text-2xl font-display mb-2">Final Check</h2>
+                <p class="text-tertiary-light mb-6">Let's solidify your understanding with a final question.</p>
+                <p class="mb-2">Denaturation involves the permanent disruption of a protein's primary structure.</p>
+                <div class="quiz-container" data-quiz-type="tf" data-answer="false">
+                    <button class="quiz-option border-2 border-secondary-dark p-3 rounded-lg w-full md:w-auto md:min-w-[120px] text-left" data-value="true">True</button>
+                    <button class="quiz-option border-2 border-secondary-dark p-3 rounded-lg w-full md:w-auto md:min-w-[120px] text-left mt-2 md:mt-0 md:ml-2" data-value="false">False</button>
+                    <div class="feedback mt-2 h-6">
+                        <p class="text-sm opacity-0 text-gray-400 transition-opacity">Hint: The primary structure (sequence of amino acids) is held by strong peptide bonds and usually remains intact.</p>
+                    </div>
+                </div>
+            `
+        },
+        {
+            title: "Conclusion",
+            content: `
+                <div class="text-center flex flex-col items-center justify-center h-full">
+                    <h2 class="text-4xl md:text-5xl font-display text-accent">نهاية الفصل الرابع</h2>
+                    <p class="text-xl md:text-2xl mt-2 text-secondary-light">End of Chapter Four</p>
+                    <p class="mt-6 text-tertiary-light max-w-xl">Congratulations! You've completed the interactive lesson on Amino Acids and Proteins.</p>
+                </div>
+            `,
+            isOutro: true
+        }
+    ],
+    currentScreenIndex: 0,
+
+    init() {
+        this.renderScreen();
+        this.attachEventListeners();
+        this.updateNavigation();
+    },
+
+    renderScreen() {
+        const screenData = this.screens[this.currentScreenIndex];
+        const main = document.querySelector('main');
+        main.innerHTML = `<div id="screen-${this.currentScreenIndex}" class="lesson-screen">${screenData.content}</div>`;
+        
+        // Force reflow to enable transition
+        const screenEl = document.getElementById(`screen-${this.currentScreenIndex}`);
+        screenEl.offsetHeight;
+        screenEl.classList.add('active');
+
+        this.initInteractiveElements(screenEl);
+        this.updateProgress();
+    },
+
+    initInteractiveElements(container) {
+        // Init Quizzes
+        container.querySelectorAll('.quiz-container').forEach(quiz => this.initQuiz(quiz));
+
+        // Init Drag and Drop for Amino Acid Structure
+        if (container.querySelector('#labels-container')) this.initAminoAcidDragDrop();
+        
+        // Init Drag and Drop for Precipitation
+        if (container.querySelector('#precip-agents')) this.initPrecipitationDragDrop();
+
+        // Init Flashcards
+        container.querySelectorAll('.flash-card').forEach(card => {
+            card.addEventListener('click', () => card.classList.toggle('flipped'));
+        });
+    },
+
+    // Quiz Handlers
+    initQuiz(quiz) {
+        const type = quiz.dataset.quizType;
+        if (type === 'mcq' || type === 'tf') {
+            const options = quiz.querySelectorAll('.quiz-option');
+            options.forEach(option => {
+                option.addEventListener('click', () => this.checkMCQAnswer(option));
+            });
+        } else if (type === 'fill') {
+            const btn = quiz.querySelector('.check-btn');
+            btn.addEventListener('click', () => this.checkFillAnswer(btn));
+        }
+    },
+
+    checkMCQAnswer(selectedOption) {
+        const quizContainer = selectedOption.closest('.quiz-container');
+        if (quizContainer.dataset.answered) return;
+        quizContainer.dataset.answered = 'true';
+
+        const correctAnswer = quizContainer.dataset.answer;
+        const selectedAnswer = selectedOption.dataset.value;
+        const feedbackEl = quizContainer.querySelector('.feedback');
+        
+        quizContainer.querySelectorAll('.quiz-option').forEach(opt => {
+            opt.classList.add('disabled');
+            if (opt.dataset.value !== correctAnswer) {
+                opt.classList.add('incorrect');
+            }
+        });
+        
+        selectedOption.classList.remove('incorrect');
+        const correctOption = quizContainer.querySelector(`[data-value="${correctAnswer}"]`);
+        correctOption.classList.add('correct');
+        
+        if (selectedAnswer === correctAnswer) {
+            this.showFeedback(feedbackEl, 'Correct!', 'success');
+        } else {
+            this.showFeedback(feedbackEl, 'Incorrect.', 'error');
+        }
+        
+        const hint = feedbackEl.querySelector('p');
+        if(hint) hint.style.opacity = '1';
+    },
+
+    checkFillAnswer(button) {
+        const quizContainer = button.closest('.quiz-container');
+        if (quizContainer.dataset.answered) return;
+
+        const input = quizContainer.querySelector('.quiz-input');
+        const correctAnswer = quizContainer.dataset.answer;
+        const userAnswer = input.value.trim();
+        const feedbackEl = quizContainer.querySelector('.feedback');
+
+        if (userAnswer === correctAnswer) {
+            quizContainer.dataset.answered = 'true';
+            input.disabled = true;
+            input.classList.add('border-success');
+            button.classList.add('hidden');
+            this.showFeedback(feedbackEl, 'Correct!', 'success');
+        } else {
+            this.showFeedback(feedbackEl, 'Not quite, try again.', 'error');
+        }
+    },
+    
+    // Drag and Drop Handlers
+    initAminoAcidDragDrop() {
+        const draggables = document.querySelectorAll('#labels-container .draggable');
+        const dropZones = document.querySelectorAll('.drop-zone[data-accept]');
+        let correctDrops = 0;
+
+        draggables.forEach(draggable => {
+            draggable.addEventListener('dragstart', e => {
+                e.dataTransfer.setData('text/plain', draggable.dataset.id);
+                setTimeout(() => draggable.classList.add('opacity-50'), 0);
+            });
+            draggable.addEventListener('dragend', () => draggable.classList.remove('opacity-50'));
+        });
+
+        dropZones.forEach(zone => {
+            zone.addEventListener('dragover', e => {
+                e.preventDefault();
+                zone.classList.add('drag-over');
+            });
+            zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+            zone.addEventListener('drop', e => {
+                e.preventDefault();
+                zone.classList.remove('drag-over');
+                const droppedId = e.dataTransfer.getData('text/plain');
+                if (zone.dataset.accept === droppedId) {
+                    const draggableEl = document.querySelector(`.draggable[data-id="${droppedId}"]`);
+                    zone.appendChild(draggableEl);
+                    zone.classList.add('dropped');
+                    draggableEl.setAttribute('draggable', 'false');
+                    draggableEl.classList.remove('draggable');
+                    draggableEl.classList.add('p-1', 'text-xs');
+                    correctDrops++;
+                    if (correctDrops === 4) {
+                       this.showFeedback(document.querySelector('#drag-feedback'), 'Excellent! All labels are correct.', 'success');
+                    }
+                }
+            });
+        });
+    },
+    
+    initPrecipitationDragDrop() {
+        const draggables = document.querySelectorAll('#precip-agents .draggable');
+        const dropZones = document.querySelectorAll('.drop-zone[data-accept]');
+        let correctDrops = 0;
+
+        draggables.forEach(draggable => {
+            draggable.addEventListener('dragstart', e => {
+                e.dataTransfer.setData('text/plain', draggable.dataset.category);
+                e.dataTransfer.setData('text/id', draggable.textContent);
+                setTimeout(() => draggable.classList.add('opacity-50'), 0);
+            });
+            draggable.addEventListener('dragend', () => draggable.classList.remove('opacity-50'));
+        });
+
+        dropZones.forEach(zone => {
+            zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag-over'); });
+            zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+            zone.addEventListener('drop', e => {
+                e.preventDefault();
+                zone.classList.remove('drag-over');
+                const droppedCategory = e.dataTransfer.getData('text/plain');
+                const droppedId = e.dataTransfer.getData('text/id');
+                if (zone.dataset.accept === droppedCategory) {
+                    const originalDraggable = Array.from(draggables).find(d => d.textContent === droppedId);
+                    if (originalDraggable) {
+                         const newEl = originalDraggable.cloneNode(true);
+                         newEl.classList.remove('draggable');
+                         newEl.setAttribute('draggable', 'false');
+                         zone.appendChild(newEl);
+                         originalDraggable.style.display = 'none';
+                         correctDrops++;
+                         if (correctDrops === draggables.length) {
+                             this.showFeedback(document.querySelector('#precip-feedback'), 'Perfect categorization!', 'success');
+                         }
+                    }
+                } else {
+                    this.showFeedback(document.querySelector('#precip-feedback'), 'That doesn\'t belong here. Try again.', 'error');
+                }
+            });
+        });
+    },
+
+    showFeedback(element, message, type) {
+        if (!element) return;
+        element.textContent = message;
+        element.classList.remove('text-success', 'text-error');
+        element.classList.add(type === 'success' ? 'text-success' : 'text-error');
+        element.style.opacity = 1;
+        element.style.transform = 'scale(1)';
+
+        if(type === 'error'){
+            setTimeout(() => {
+                element.style.opacity = 0;
+                element.style.transform = 'scale(0.8)';
+            }, 2000);
+        }
+    },
+    
+    // Navigation
+    attachEventListeners() {
+        const nextBtn = document.getElementById('next-btn');
+        const backBtn = document.getElementById('back-btn');
+
+        nextBtn.addEventListener('click', () => this.navigate(1));
+        backBtn.addEventListener('click', () => this.navigate(-1));
+    },
+
+    navigate(direction) {
+        const newIndex = this.currentScreenIndex + direction;
+        if (newIndex >= 0 && newIndex < this.screens.length) {
+            this.currentScreenIndex = newIndex;
+            this.renderScreen();
+            this.updateNavigation();
+        }
+    },
+    
+    updateNavigation() {
+        const nextBtn = document.getElementById('next-btn');
+        const backBtn = document.getElementById('back-btn');
+        const currentScreen = this.screens[this.currentScreenIndex];
+
+        backBtn.disabled = this.currentScreenIndex === 0;
+        nextBtn.disabled = this.currentScreenIndex === this.screens.length - 1;
+
+        if (currentScreen.isIntro) {
+            nextBtn.textContent = 'Start Lesson';
+        } else if (currentScreen.isOutro) {
+            nextBtn.textContent = 'Restart';
+            nextBtn.disabled = false;
+            nextBtn.onclick = () => {
+                this.currentScreenIndex = 0;
+                this.renderScreen();
+                this.updateNavigation();
+                nextBtn.onclick = () => this.navigate(1); // Reset onclick
+            };
+        } else {
+            nextBtn.textContent = 'Next';
+        }
+    },
+    
+    updateProgress() {
+        const progressIndicator = document.getElementById('progress-indicator');
+        progressIndicator.textContent = `Screen ${this.currentScreenIndex + 1} of ${this.screens.length}`;
+    }
+};
+
+document.addEventListener('DOMContentLoaded', () => {
+    appData.init();
+});
+
+</script>
+</body>
+</html>
