@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Lesson: The Peptide Bond</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fadeIn {
+            animation: fadeIn 0.8s ease-out forwards;
+        }
+        .glass-card {
+            background: rgba(22, 27, 34, 0.6);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(139, 148, 158, 0.2);
+        }
+        .disabled-button {
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
+        .correct-answer {
+            background-color: #238636 !important;
+            border-color: #3fb950 !important;
+            color: white !important;
+        }
+        .incorrect-answer {
+            background-color: #da3633 !important;
+            border-color: #f85149 !important;
+            color: white !important;
+        }
+        .correct-input {
+            border-color: #3fb950 !important;
+            box-shadow: 0 0 0 2px rgba(63, 185, 80, 0.4);
+        }
+        .incorrect-input {
+            border-color: #f85149 !important;
+            box-shadow: 0 0 0 2px rgba(248, 81, 73, 0.4);
+        }
+        /* SVG Animation Styles */
+        #svg-amino-acid-1, #svg-amino-acid-2, #svg-water, #svg-peptide-bond { opacity: 0; }
+        #svg-highlight-oh, #svg-highlight-h { opacity: 0; }
+        
+        .anim-step-1 #svg-amino-acid-1, .anim-step-1 #svg-amino-acid-2 { animation: svg-fade-in 1s forwards; }
+        .anim-step-2 #svg-highlight-oh, .anim-step-2 #svg-highlight-h { animation: svg-fade-in 0.5s forwards; }
+        .anim-step-3 #svg-highlight-oh, .anim-step-3 #svg-highlight-h { animation: svg-fade-out 0.5s forwards; }
+        .anim-step-3 #svg-oh-group, .anim-step-3 #svg-h-group { animation: svg-move-out 1.5s forwards; }
+        .anim-step-4 #svg-oh-group, .anim-step-4 #svg-h-group { opacity: 0; }
+        .anim-step-4 #svg-water { animation: svg-fade-in 1s 0.5s forwards; }
+        .anim-step-5 #svg-amino-acid-2 { transform: translateX(-80px); transition: transform 1s ease-in-out; }
+        .anim-step-5 #svg-peptide-bond { animation: svg-fade-in 1s 0.5s forwards; }
+
+        @keyframes svg-fade-in { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes svg-fade-out { from { opacity: 1; } to { opacity: 0; } }
+        @keyframes svg-move-out {
+            0% { transform: translate(0, 0); opacity: 1; }
+            50% { transform: translate(60px, 30px); opacity: 1; }
+            100% { transform: translate(60px, 30px); opacity: 0; }
+        }
+    </style>
+</head>
+<body class="bg-[#0D1117] text-[#E6EDF3] font-sans antialiased overflow-hidden">
+    <canvas id="particle-canvas" class="absolute top-0 left-0 w-full h-full z-0"></canvas>
+    
+    <div id="app" class="relative z-10 flex flex-col items-center justify-center min-h-screen p-4 font-inter">
+
+        <div id="lesson-container" class="w-full max-w-4xl mx-auto">
+            
+            <!-- Progress Bar -->
+            <div class="w-full bg-[#161B22] rounded-full h-2.5 mb-6 border border-gray-700">
+                <div id="progress-bar" class="bg-gradient-to-r from-sky-500 to-indigo-500 h-2.5 rounded-full" style="width: 0%; transition: width 0.5s ease-in-out;"></div>
+            </div>
+
+            <!-- Sections Container -->
+            <div id="sections" class="relative">
+
+                <!-- Section 0: Intro -->
+                <div id="section-0" class="w-full animate-fadeIn">
+                    <div class="glass-card rounded-2xl p-8 md:p-12 text-center shadow-2xl shadow-black/20">
+                        <h1 class="text-4xl md:text-6xl font-bold font-outfit text-transparent bg-clip-text bg-gradient-to-r from-sky-400 to-blue-500 mb-2">الرابطة الببتيدية</h1>
+                        <h2 class="text-2xl md:text-3xl font-semibold font-outfit text-white mb-6">The Peptide Bond</h2>
+                        <p class="text-lg text-gray-300 max-w-2xl mx-auto mb-8">
+                            An interactive journey to understand what a peptide bond is, how it forms, its key characteristics, and its fundamental importance in biology.
+                        </p>
+                        <button onclick="startLesson()" class="px-8 py-3 text-lg font-bold text-white bg-sky-600 rounded-lg hover:bg-sky-500 transition-all transform hover:scale-105 shadow-lg shadow-sky-900/50">Start Lesson</button>
+                    </div>
+                </div>
+
+                <!-- Section 1: Definition and Formation -->
+                <div id="section-1" class="hidden w-full animate-fadeIn">
+                    <div class="glass-card rounded-2xl p-6 md:p-8 shadow-2xl shadow-black/20">
+                        <h3 class="text-2xl md:text-3xl font-bold font-outfit mb-4 text-sky-400">1. Definition and Formation</h3>
+                        <p class="text-gray-300 mb-6">A peptide bond is a covalent chemical bond formed between two amino acid molecules. It's a cornerstone of protein structure, created through a <span class="font-semibold text-sky-400">condensation (or dehydration) reaction</span>. This means a water molecule is released in the process.</p>
+                        
+                        <div class="bg-[#0D1117] rounded-lg p-4 mb-6 border border-gray-700 flex flex-col md:flex-row items-center gap-6">
+                            <div class="w-full md:w-2/3">
+                                <svg id="peptide-bond-svg" viewBox="0 0 600 250" class="w-full h-auto">
+                                    <defs>
+                                        <style>
+                                            .label { font-family: 'Inter', sans-serif; font-size: 14px; fill: #E6EDF3; }
+                                            .atom-c { fill: #999; } .atom-h { fill: #fff; } .atom-o { fill: #f00; } .atom-n { fill: #00f; } .atom-r { fill: #0f0; }
+                                            .bond { stroke: #E6EDF3; stroke-width: 2; }
+                                            .highlight { stroke: #38BDF8; stroke-width: 3; fill: none; stroke-dasharray: 4; }
+                                        </style>
+                                    </defs>
+                                    
+                                    <!-- Amino Acid 1 -->
+                                    <g id="svg-amino-acid-1" transform="translate(50, 100)">
+                                        <circle cx="80" cy="0" r="10" class="atom-n"/>
+                                        <line x1="80" y1="0" x2="110" y2="0" class="bond" />
+                                        <circle cx="120" cy="0" r="12" class="atom-c"/>
+                                        <line x1="120" y1="0" x2="150" y2="0" class="bond" />
+                                        <circle cx="160" cy="0" r="12" class="atom-c"/>
+                                        <line x1="160" y1="0" x2="160" y2="-30" class="bond" />
+                                        <circle cx="160" cy="-40" r="10" class="atom-o"/>
+                                        <line x1="160" y1="0" x2="190" y2="0" class="bond" />
+                                        <g id="svg-oh-group">
+                                            <circle cx="200" cy="0" r="10" class="atom-o"/>
+                                            <line x1="200" y1="0" x2="215" y2="15" class="bond" />
+                                            <circle cx="220" cy="20" r="5" class="atom-h"/>
+                                        </g>
+                                        <rect x="190" y="-15" width="40" height="40" id="svg-highlight-oh" class="highlight"/>
+                                        <text x="135" y="50" class="label">Carboxyl Group</text>
+                                    </g>
+
+                                    <!-- Amino Acid 2 -->
+                                    <g id="svg-amino-acid-2" transform="translate(300, 100)">
+                                        <g id="svg-h-group">
+                                            <circle cx="80" cy="0" r="10" class="atom-n"/>
+                                            <line x1="80" y1="0" x2="65" y2="-15" class="bond" />
+                                            <circle cx="60" cy="-20" r="5" class="atom-h"/>
+                                        </g>
+                                        <rect x="50" y="-25" width="40" height="30" id="svg-highlight-h" class="highlight"/>
+                                        <line x1="80" y1="0" x2="110" y2="0" class="bond" />
+                                        <circle cx="120" cy="0" r="12" class="atom-c"/>
+                                        <line x1="120" y1="0" x2="150" y2="0" class="bond" />
+                                        <circle cx="160" cy="0" r="12" class="atom-c"/>
+                                        <text x="70" y="50" class="label">Amino Group</text>
+                                    </g>
+
+                                    <!-- Peptide Bond -->
+                                    <line id="svg-peptide-bond" x1="280" y1="100" x2="300" y2="100" class="bond"/>
+
+                                    <!-- Water Molecule -->
+                                    <g id="svg-water" transform="translate(450, 180)">
+                                        <circle cx="0" cy="0" r="10" class="atom-o"/>
+                                        <line x1="0" y1="0" x2="-15" y2="-15" class="bond" />
+                                        <circle cx="-20" cy="-20" r="5" class="atom-h"/>
+                                        <line x1="0" y1="0" x2="15" y2="-15" class="bond" />
+                                        <circle cx="20" cy="-20" r="5" class="atom-h"/>
+                                        <text x="-25" y="25" class="label">H₂O Released</text>
+                                    </g>
+                                </svg>
+                            </div>
+                            <div class="w-full md:w-1/3">
+                                <button id="play-animation-btn" onclick="playAnimation()" class="w-full mb-2 px-4 py-2 text-sm font-bold text-white bg-sky-600 rounded-lg hover:bg-sky-500 transition-all">Play Animation</button>
+                                <p class="text-xs text-gray-400 text-center">Watch the carboxyl group of one amino acid react with the amino group of another.</p>
+                            </div>
+                        </div>
+
+                        <!-- Interactive Element 1.1 -->
+                        <div id="q1" class="mt-8 p-4 bg-black/20 rounded-lg border border-gray-700">
+                            <p class="font-semibold mb-3">What type of chemical reaction leads to the formation of a peptide bond?</p>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <button data-correct="false" class="q1-option text-left p-3 bg-gray-800 border border-gray-600 rounded-md hover:bg-gray-700 transition">a) Hydrolysis</button>
+                                <button data-correct="false" class="q1-option text-left p-3 bg-gray-800 border border-gray-600 rounded-md hover:bg-gray-700 transition">b) Oxidation</button>
+                                <button data-correct="false" class="q1-option text-left p-3 bg-gray-800 border border-gray-600 rounded-md hover:bg-gray-700 transition">c) Reduction</button>
+                                <button data-correct="true" class="q1-option text-left p-3 bg-gray-800 border border-gray-600 rounded-md hover:bg-gray-700 transition">d) Condensation (Dehydration)</button>
+                            </div>
+                            <p id="q1-feedback" class="text-sm mt-3 h-5"></p>
+                        </div>
+                        
+                        <!-- Interactive Element 1.2 -->
+                        <div id="q2" class="mt-6 p-4 bg-black/20 rounded-lg border border-gray-700">
+                            <p class="font-semibold mb-3">Fill in the blanks:</p>
+                            <div class="flex flex-wrap items-center gap-2 text-lg">
+                                A peptide bond forms between the
+                                <input id="blank1" type="text" placeholder="____________" class="q2-input bg-transparent border-b-2 border-gray-500 focus:border-sky-400 focus:outline-none w-24 text-center">
+                                group of one amino acid and the
+                                <input id="blank2" type="text" placeholder="____________" class="q2-input bg-transparent border-b-2 border-gray-500 focus:border-sky-400 focus:outline-none w-24 text-center">
+                                group of another, releasing a molecule of
+                                <input id="blank3" type="text" placeholder="____________" class="q2-input bg-transparent border-b-2 border-gray-500 focus:border-sky-400 focus:outline-none w-24 text-center">.
+                            </div>
+                            <button onclick="checkFillInTheBlank()" class="mt-4 px-4 py-2 text-sm font-bold text-white bg-indigo-600 rounded-lg hover:bg-indigo-500 transition">Check Answers</button>
+                            <p id="q2-feedback" class="text-sm mt-3 h-5"></p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section 2: Characteristics -->
+                <div id="section-2" class="hidden w-full animate-fadeIn">
+                    <div class="glass-card rounded-2xl p-6 md:p-8 shadow-2xl shadow-black/20">
+                        <h3 class="text-2xl md:text-3xl font-bold font-outfit mb-4 text-sky-400">2. Characteristics and Properties</h3>
+                        <p class="text-gray-300 mb-4">The peptide bond isn't just a simple single bond. It has unique properties that are critical for protein structure:</p>
+                        <ul class="list-disc list-inside space-y-3 text-gray-300">
+                            <li><strong class="text-sky-300">Amide Linkage:</strong> A peptide bond is a type of amide bond (-CO-NH-).</li>
+                            <li><strong class="text-sky-300">Partial Double Bond Character:</strong> Due to resonance, electrons are shared between the oxygen, carbon, and nitrogen atoms. This gives the C-N bond partial double bond character.</li>
+                            <li><strong class="text-sky-300">Rigidity and Planarity:</strong> This double bond character prevents free rotation around the C-N bond. As a result, the six atoms involved (Cα, C, O, N, H, Cα) lie in a single plane. This planarity is a major constraint on how polypeptide chains can fold.</li>
+                        </ul>
+
+                        <!-- Interactive Element 2.1 -->
+                        <div id="q3" class="mt-8 p-4 bg-black/20 rounded-lg border border-gray-700">
+                            <p class="font-semibold mb-3">True or False: The C-N bond within a peptide linkage allows for free rotation, contributing to protein flexibility.</p>
+                            <div class="flex gap-4">
+                                <button data-correct="false" class="q3-option w-full p-3 bg-gray-800 border border-gray-600 rounded-md hover:bg-gray-700 transition">True</button>
+                                <button data-correct="true" class="q3-option w-full p-3 bg-gray-800 border border-gray-600 rounded-md hover:bg-gray-700 transition">False</button>
+                            </div>
+                            <p id="q3-feedback" class="text-sm mt-3 h-5"></p>
+                        </div>
+                        
+                        <!-- Interactive Element 2.2 -->
+                        <div id="q4" class="mt-6 p-4 bg-black/20 rounded-lg border border-gray-700">
+                            <p class="font-semibold mb-3">Which of the following are true characteristics of a peptide bond? (Select all that apply)</p>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <label class="flex items-center p-3 bg-gray-800 border border-gray-600 rounded-md hover:bg-gray-700 transition cursor-pointer">
+                                    <input type="checkbox" data-correct="false" class="q4-option form-checkbox bg-gray-900 border-gray-500 text-sky-500 focus:ring-sky-500 h-5 w-5 rounded mr-3">
+                                    <span>It is an ester linkage.</span>
+                                </label>
+                                <label class="flex items-center p-3 bg-gray-800 border border-gray-600 rounded-md hover:bg-gray-700 transition cursor-pointer">
+                                    <input type="checkbox" data-correct="true" class="q4-option form-checkbox bg-gray-900 border-gray-500 text-sky-500 focus:ring-sky-500 h-5 w-5 rounded mr-3">
+                                    <span>It possesses partial double bond character.</span>
+                                </label>
+                                <label class="flex items-center p-3 bg-gray-800 border border-gray-600 rounded-md hover:bg-gray-700 transition cursor-pointer">
+                                    <input type="checkbox" data-correct="true" class="q4-option form-checkbox bg-gray-900 border-gray-500 text-sky-500 focus:ring-sky-500 h-5 w-5 rounded mr-3">
+                                    <span>It is rigid and planar.</span>
+                                </label>
+                                <label class="flex items-center p-3 bg-gray-800 border border-gray-600 rounded-md hover:bg-gray-700 transition cursor-pointer">
+                                    <input type="checkbox" data-correct="false" class="q4-option form-checkbox bg-gray-900 border-gray-500 text-sky-500 focus:ring-sky-500 h-5 w-5 rounded mr-3">
+                                    <span>It results from a hydrolysis reaction.</span>
+                                </label>
+                                <label class="flex items-center p-3 bg-gray-800 border border-gray-600 rounded-md hover:bg-gray-700 transition cursor-pointer">
+                                    <input type="checkbox" data-correct="true" class="q4-option form-checkbox bg-gray-900 border-gray-500 text-sky-500 focus:ring-sky-500 h-5 w-5 rounded mr-3">
+                                    <span>It is an amide linkage.</span>
+                                </label>
+                            </div>
+                            <button onclick="checkMultiSelect()" class="mt-4 px-4 py-2 text-sm font-bold text-white bg-indigo-600 rounded-lg hover:bg-indigo-500 transition">Check Answer</button>
+                            <p id="q4-feedback" class="text-sm mt-3 h-5"></p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section 3: Significance -->
+                <div id="section-3" class="hidden w-full animate-fadeIn">
+                    <div class="glass-card rounded-2xl p-6 md:p-8 shadow-2xl shadow-black/20">
+                        <h3 class="text-2xl md:text-3xl font-bold font-outfit mb-4 text-sky-400">3. Significance in Biology</h3>
+                        <p class="text-gray-300 mb-4">Peptide bonds are the literal backbone of proteins. By linking amino acids one after another, they form long chains called <strong class="text-sky-300">polypeptides</strong>. </p>
+                        <p class="text-gray-300 mb-6">These polypeptide chains then fold into complex and specific three-dimensional structures to become functional <strong class="text-sky-300">proteins</strong>. Proteins are the workhorses of the cell, performing countless tasks essential for life, including:</p>
+                        <ul class="grid grid-cols-2 gap-4 text-gray-300 mb-6">
+                            <li class="bg-black/20 p-3 rounded-lg border border-gray-700"><strong>Catalysis:</strong> Enzymes speed up chemical reactions.</li>
+                            <li class="bg-black/20 p-3 rounded-lg border border-gray-700"><strong>Structure:</strong> Collagen and keratin provide support.</li>
+                            <li class="bg-black/20 p-3 rounded-lg border border-gray-700"><strong>Transport:</strong> Hemoglobin carries oxygen.</li>
+                            <li class="bg-black/20 p-3 rounded-lg border border-gray-700"><strong>Defense:</strong> Antibodies fight off pathogens.</li>
+                        </ul>
+                        
+                        <!-- Interactive Element 3.1 -->
+                        <div id="q5" class="mt-8 p-4 bg-black/20 rounded-lg border border-gray-700">
+                             <p class="font-semibold mb-3">In your own words, explain why the formation of peptide bonds is crucial for life.</p>
+                             <textarea id="short-answer" rows="4" class="w-full p-3 bg-gray-800 border border-gray-600 rounded-md focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition text-gray-200" placeholder="Type your answer here..."></textarea>
+                             <button onclick="toggleModelAnswer()" class="mt-4 px-4 py-2 text-sm font-bold text-white bg-indigo-600 rounded-lg hover:bg-indigo-500 transition">Reveal Model Answer</button>
+                             <div id="model-answer" class="hidden mt-4 p-3 bg-green-900/50 border border-green-500/50 rounded-md">
+                                 <p class="font-semibold text-green-300">Example Answer:</p>
+                                 <p class="text-green-200">Peptide bonds are crucial because they link amino acids together to form polypeptide chains. These chains are the primary structure of proteins. Without peptide bonds, proteins could not be formed, and since proteins carry out nearly all of life's essential functions (like catalysis, transport, and structural support), life as we know it would not exist.</p>
+                             </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section 4: Summary -->
+                <div id="section-4" class="hidden w-full animate-fadeIn">
+                    <div class="glass-card rounded-2xl p-8 md:p-12 text-center shadow-2xl shadow-black/20">
+                        <h2 class="text-3xl md:text-4xl font-bold font-outfit text-transparent bg-clip-text bg-gradient-to-r from-sky-400 to-blue-500 mb-6">Lesson Complete!</h2>
+                        <p class="text-lg text-gray-300 max-w-2xl mx-auto mb-8">
+                            Great work! You've explored the fundamental aspects of the peptide bond. Here are the key takeaways:
+                        </p>
+                        <ul class="text-left max-w-lg mx-auto space-y-3 list-disc list-inside bg-black/20 p-6 rounded-lg border border-gray-700 mb-8">
+                            <li>Peptide bonds form between amino acids via a <strong class="text-sky-300">condensation</strong> reaction.</li>
+                            <li>It's a type of <strong class="text-sky-300">amide linkage</strong> with partial double bond character.</li>
+                            <li>This makes the bond <strong class="text-sky-300">rigid and planar</strong>, restricting rotation.</li>
+                            <li>Peptide bonds are essential for forming <strong class="text-sky-300">polypeptides and proteins</strong>.</li>
+                        </ul>
+                        <button onclick="restartLesson()" class="px-8 py-3 text-lg font-bold text-white bg-sky-600 rounded-lg hover:bg-sky-500 transition-all transform hover:scale-105 shadow-lg shadow-sky-900/50">Restart Lesson</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Navigation -->
+            <div id="navigation" class="hidden mt-6 flex justify-between items-center">
+                <button id="prev-btn" onclick="navigate(-1)" class="px-6 py-2 font-bold text-white bg-gray-700 rounded-lg hover:bg-gray-600 transition">Previous</button>
+                <div id="section-tracker" class="text-sm text-gray-400">Section 1 of 4</div>
+                <button id="next-btn" onclick="navigate(1)" class="px-6 py-2 font-bold text-white bg-sky-600 rounded-lg hover:bg-sky-500 transition">Next</button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // --- Tailwind Config ---
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        outfit: ['Outfit', 'sans-serif'],
+                    },
+                }
+            }
+        }
+
+        // --- Particle Background ---
+        const canvas = document.getElementById('particle-canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        let particles = [];
+        
+        function createParticles() {
+            particles = [];
+            let particleCount = Math.floor(canvas.width * canvas.height / 20000);
+            for (let i = 0; i < particleCount; i++) {
+                particles.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    vx: (Math.random() - 0.5) * 0.3,
+                    vy: (Math.random() - 0.5) * 0.3,
+                    radius: Math.random() * 1.5 + 0.5
+                });
+            }
+        }
+
+        function animateParticles() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            particles.forEach(p => {
+                p.x += p.vx;
+                p.y += p.vy;
+                if (p.x < 0 || p.x > canvas.width) p.vx *= -1;
+                if (p.y < 0 || p.y > canvas.height) p.vy *= -1;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(56, 189, 248, 0.3)';
+                ctx.fill();
+            });
+            requestAnimationFrame(animateParticles);
+        }
+        
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            createParticles();
+        });
+
+        createParticles();
+        animateParticles();
+
+        // --- Lesson Logic ---
+        const sections = document.querySelectorAll('[id^="section-"]');
+        const totalSections = 4; // Intro doesn't count in progress
+        let currentSection = 0;
+
+        const progressBar = document.getElementById('progress-bar');
+        const sectionTracker = document.getElementById('section-tracker');
+        const navigation = document.getElementById('navigation');
+        const nextBtn = document.getElementById('next-btn');
+        const prevBtn = document.getElementById('prev-btn');
+        
+        const sectionStates = {
+            1: { q1: false, q2: false },
+            2: { q3: false, q4: false },
+            3: { q5: true }, // Short answer is self-assessed, so always considered "complete"
+        };
+        
+        function updateUI() {
+            sections.forEach((section, index) => {
+                section.classList.toggle('hidden', index !== currentSection);
+            });
+
+            if (currentSection > 0) {
+                navigation.classList.remove('hidden');
+                progressBar.style.width = `${((currentSection -1) / (totalSections-1)) * 100}%`;
+                sectionTracker.textContent = `Section ${currentSection} of ${totalSections-1}`;
+            } else {
+                navigation.classList.add('hidden');
+                progressBar.style.width = '0%';
+            }
+
+            prevBtn.classList.toggle('disabled-button', currentSection <= 1);
+            prevBtn.disabled = currentSection <= 1;
+
+            if(currentSection > 0 && currentSection < totalSections) {
+                 const allComplete = Object.values(sectionStates[currentSection]).every(Boolean);
+                 nextBtn.classList.toggle('disabled-button', !allComplete);
+                 nextBtn.disabled = !allComplete;
+            }
+            if(currentSection === totalSections) { // On summary page
+                nextBtn.classList.add('hidden');
+            } else {
+                nextBtn.classList.remove('hidden');
+            }
+        }
+        
+        function startLesson() {
+            currentSection = 1;
+            updateUI();
+        }
+
+        function restartLesson() {
+            location.reload();
+        }
+
+        function navigate(direction) {
+            const newSection = currentSection + direction;
+            if (newSection >= 1 && newSection <= totalSections) {
+                currentSection = newSection;
+                updateUI();
+            }
+        }
+
+        // --- SVG Animation Logic ---
+        function playAnimation() {
+            const svg = document.getElementById('peptide-bond-svg');
+            const btn = document.getElementById('play-animation-btn');
+            btn.disabled = true;
+            btn.textContent = "Animating...";
+            svg.classList.remove(...Array.from(svg.classList).filter(c => c.startsWith('anim-step-')));
+            
+            setTimeout(() => svg.classList.add('anim-step-1'), 0);
+            setTimeout(() => svg.classList.add('anim-step-2'), 1000);
+            setTimeout(() => svg.classList.add('anim-step-3'), 2000);
+            setTimeout(() => svg.classList.add('anim-step-4'), 3500);
+            setTimeout(() => svg.classList.add('anim-step-5'), 4500);
+            setTimeout(() => {
+                btn.disabled = false;
+                btn.textContent = "Replay Animation";
+            }, 6000);
+        }
+        
+        // --- Question Logic ---
+        
+        // Q1: Multiple Choice
+        document.querySelectorAll('.q1-option').forEach(button => {
+            button.addEventListener('click', (e) => {
+                if (sectionStates[1].q1) return; // Already answered
+                const isCorrect = e.target.dataset.correct === 'true';
+                const feedbackEl = document.getElementById('q1-feedback');
+                
+                document.querySelectorAll('.q1-option').forEach(btn => {
+                    btn.classList.add('disabled-button');
+                    if (btn.dataset.correct === 'true') {
+                        btn.classList.add('correct-answer');
+                    }
+                });
+
+                if (isCorrect) {
+                    e.target.classList.add('correct-answer');
+                    feedbackEl.textContent = 'Correct! It\'s a condensation reaction.';
+                    feedbackEl.className = 'text-sm mt-3 h-5 text-green-400';
+                    sectionStates[1].q1 = true;
+                } else {
+                    e.target.classList.add('incorrect-answer');
+                    feedbackEl.textContent = 'Not quite. Water is released, so it\'s dehydration/condensation.';
+                    feedbackEl.className = 'text-sm mt-3 h-5 text-red-400';
+                }
+                updateUI();
+            });
+        });
+
+        // Q2: Fill in the blank
+        function checkFillInTheBlank() {
+            const answers = ['carboxyl', 'amino', 'water'];
+            const inputs = [document.getElementById('blank1'), document.getElementById('blank2'), document.getElementById('blank3')];
+            let allCorrect = true;
+
+            inputs.forEach((input, index) => {
+                input.classList.remove('correct-input', 'incorrect-input');
+                if (input.value.trim().toLowerCase() === answers[index]) {
+                    input.classList.add('correct-input');
+                } else {
+                    input.classList.add('incorrect-input');
+                    allCorrect = false;
+                }
+            });
+            const feedbackEl = document.getElementById('q2-feedback');
+            if (allCorrect) {
+                feedbackEl.textContent = 'Perfect! All answers are correct.';
+                feedbackEl.className = 'text-sm mt-3 h-5 text-green-400';
+                sectionStates[1].q2 = true;
+                updateUI();
+            } else {
+                feedbackEl.textContent = 'Some answers are incorrect. Please try again.';
+                feedbackEl.className = 'text-sm mt-3 h-5 text-red-400';
+            }
+        }
+
+        // Q3: True/False
+        document.querySelectorAll('.q3-option').forEach(button => {
+            button.addEventListener('click', (e) => {
+                if (sectionStates[2].q3) return;
+                const isCorrect = e.target.dataset.correct === 'true';
+                const feedbackEl = document.getElementById('q3-feedback');
+
+                document.querySelectorAll('.q3-option').forEach(btn => btn.classList.add('disabled-button'));
+                
+                if (isCorrect) {
+                    e.target.classList.add('correct-answer');
+                    feedbackEl.textContent = 'Correct! The peptide bond is rigid and planar due to partial double bond character.';
+                    feedbackEl.className = 'text-sm mt-3 h-5 text-green-400';
+                    sectionStates[2].q3 = true;
+                } else {
+                    e.target.classList.add('incorrect-answer');
+                    feedbackEl.textContent = 'Incorrect. Free rotation is restricted, which is key to protein structure.';
+                    feedbackEl.className = 'text-sm mt-3 h-5 text-red-400';
+                }
+                updateUI();
+            });
+        });
+
+        // Q4: Multi Select
+        function checkMultiSelect() {
+            const options = document.querySelectorAll('.q4-option');
+            let correctCount = 0;
+            let totalCorrect = 3;
+            let score = 0;
+
+            options.forEach(opt => {
+                const parentLabel = opt.parentElement;
+                parentLabel.classList.remove('correct-answer', 'incorrect-answer');
+                const isCorrect = opt.dataset.correct === 'true';
+                if (opt.checked) {
+                    if (isCorrect) {
+                        parentLabel.classList.add('correct-answer');
+                        score++;
+                    } else {
+                        parentLabel.classList.add('incorrect-answer');
+                        score--;
+                    }
+                } else {
+                    if (isCorrect) {
+                        parentLabel.classList.add('incorrect-answer');
+                    }
+                }
+            });
+            
+            const feedbackEl = document.getElementById('q4-feedback');
+            if (score === totalCorrect) {
+                feedbackEl.textContent = 'Excellent! You identified all correct characteristics.';
+                feedbackEl.className = 'text-sm mt-3 h-5 text-green-400';
+                sectionStates[2].q4 = true;
+                updateUI();
+            } else {
+                feedbackEl.textContent = 'Not quite. Review the highlighted answers and try again.';
+                feedbackEl.className = 'text-sm mt-3 h-5 text-red-400';
+            }
+        }
+
+        // Q5: Short Answer
+        function toggleModelAnswer() {
+            document.getElementById('model-answer').classList.toggle('hidden');
+        }
+        
+        // Initial setup
+        updateUI();
+    </script>
+</body>
+</html>
